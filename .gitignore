@@ -4,3 +4,4 @@
 __pycache__/
 Old_versions/
 *.pyc
+.gitignore
