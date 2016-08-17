@@ -16,7 +16,7 @@ def test_write_file(tmpdir, out):
     OUTPUT_SAVE_NAME = "Data"
     file_name = write_file(out, OUTPUT_SAVE_PATH, OUTPUT_SAVE_NAME, OUTPUT_SAVE_EXTENTION)
     assert(os.path.isfile(file_name))
-    # with open(file_name, 'r') as check:
+    # with open(file_name, 'r') as
     #     for i, line in enumerate(check):
     #         print i
     #         output = out[i]
