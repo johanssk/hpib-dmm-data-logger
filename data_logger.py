@@ -6,6 +6,7 @@ import datetime
 import logging
 import serial
 import tqdm
+import serial.tools.list_ports as lports
 # import csv
 # from data_logger_configuration import *
 # from data_logger_configuration import COM_PORT
@@ -132,26 +133,35 @@ def auto_connect_device():
     boolean False if no connection
     """
     logging.info("Connecting to device")
-    for com_port in xrange(5):
-        logging.debug("Trying COM%i" % com_port)
-        try:
-            # try_ser = serial.Serial('\\\\.\\COM' + str(com_port), 9600, timeout=0.5)
-            try_ser = serial.Serial('COM' + str(com_port), 9600, timeout=0.5)
-            try_ser.write("%s\n" % SEND_CMD)
-            time.sleep(TIME_SLEEP_READ)
-            test_read = try_ser.read(256).strip()
-            logging.debug(test_read)
-            logging.debug("Length test_read: %i" % len(test_read))
-            if not len(test_read) > 0:
-                continue
-            logging.info("Connected to COM%i" % com_port)
-            return try_ser
-        except WindowsError:
-            continue
-        except serial.SerialException:
-            continue
-    logging.critical("Error connecting to device")
-    return False
+    ports = list(lports.comports())     # Change to .grep once determine what port returns
+    logging.debug(ports)
+    for com_port in ports:
+        if "test" in com_port:
+            connect_ser = serial.Serial(com_port[0], 9600, timeout=0.5)
+            return connect_ser
+
+
+    # logging.info("Connecting to device")
+    # for com_port in xrange(5):
+    #     logging.debug("Trying COM%i" % com_port)
+    #     try:
+    #         # try_ser = serial.Serial('\\\\.\\COM' + str(com_port), 9600, timeout=0.5)
+    #         try_ser = serial.Serial('COM' + str(com_port), 9600, timeout=0.5)
+    #         try_ser.write("%s\n" % SEND_CMD)
+    #         time.sleep(TIME_SLEEP_READ)
+    #         test_read = try_ser.read(256).strip()
+    #         logging.debug(test_read)
+    #         logging.debug("Length test_read: %i" % len(test_read))
+    #         if not len(test_read) > 0:
+    #             continue
+    #         logging.info("Connected to COM%i" % com_port)
+    #         return try_ser
+    #     except WindowsError:
+    #         continue
+    #     except serial.SerialException:
+    #         continue
+    # logging.critical("Error connecting to device")
+    # return False
 
 if __name__ == '__main__':
     start_total_time = time.time()
