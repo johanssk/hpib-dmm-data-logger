@@ -1,13 +1,12 @@
 
-__version__ = 4
 import os.path
 import sys
 import time
 import datetime
-import serial
 import logging
+import serial
 import tqdm
-import csv
+# import csv
 # from data_logger_configuration import *
 # from data_logger_configuration import COM_PORT
 from data_logger_configuration import OUTPUT_SAVE_PATH
@@ -17,6 +16,8 @@ from data_logger_configuration import SAMPLE_TIME
 from data_logger_configuration import OUTPUT_SAVE_EXTENTION
 from data_logger_configuration import TIME_SLEEP_READ
 from data_logger_configuration import SETUP_CMD
+
+__version__ = 4
 
 logging.basicConfig(level=logging.DEBUG, format=' %(asctime)s - %(levelname)s- %(message)s')
 logging.disable(logging.DEBUG)
@@ -30,10 +31,10 @@ def read_write(my_ser):
     """
     Sets up device and sends commands, then reads response
 
-    INPUT 
+    INPUT
     my_ser = serial connection
 
-    OUTPUT 
+    OUTPUT
     out: List of tuples of format (time_of_reading, reading)
     """
     try:
@@ -82,7 +83,7 @@ def read_write(my_ser):
             else:
                 logging.critical("No response from system")
                 return False
-            
+
             offset = current_time() - start_time
             logging.debug("Offset: %f", offset)
             if sample - offset > 0:
@@ -96,10 +97,10 @@ def write_file(out, output_save_path, output_save_name, output_save_extention):
     """
     Writes data to specified file
 
-    INPUT 
+    INPUT
     out: List of tuples of format (time_of_reading, reading)
 
-    OUTPUT 
+    OUTPUT
     File at location LOG_SAVE_PATH, with filename of format
     "LOG_SAVE_NAME %Y-%m-%d %H_%M_%S" and extension LOG_SAVE_EXTENTION
     """
@@ -123,10 +124,10 @@ def auto_connect_device():
     """
     Runs through COM 0-4 and connects to correct device
 
-    INPUT 
+    INPUT
     None
 
-    OUTPUT 
+    OUTPUT
     try_ser if connected and device responding
     boolean False if no connection
     """
@@ -155,7 +156,7 @@ def auto_connect_device():
 if __name__ == '__main__':
     start_total_time = time.time()
     ser = serial.Serial()
-    
+
     try:
         # assert SAMPLE_TIME > 0
         if not SAMPLE_TIME > 0:
@@ -166,7 +167,7 @@ if __name__ == '__main__':
         if not os.path.isdir(OUTPUT_SAVE_PATH):
             raise PathError
         # assert os.path.isdir(LOG_SAVE_PATH)
-        
+
         ser = auto_connect_device()
         if not ser:
             sys.exit()
@@ -196,3 +197,4 @@ if __name__ == '__main__':
     #     print e
     #     print "Fix errors in configuration file"
     #     logging.error("Fix errors in configuration file")
+    
