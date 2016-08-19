@@ -139,7 +139,15 @@ def auto_connect_device():
     logging.debug(ports)
     for com_port in ports:
         connect_ser = serial.Serial(com_port.device, 9600, timeout=0.5)
-        return connect_ser
+        connect_ser.write("%s\n" % SETUP_CMD)
+        connect_ser.write("%s\n" % SEND_CMD)
+        return_string = connect_ser.read(256)
+        return_string = str(return_string).rstrip()
+        if len(return_string) > 0:
+            return connect_ser
+        else:
+            continue
+        # return connect_ser
 
 if __name__ == '__main__':
     start_total_time = time.time()
