@@ -137,9 +137,8 @@ def auto_connect_device():
     ports = list(lports.comports())     # Change to .grep once determine what port returns
     logging.debug(ports)
     for com_port in ports:
-        if "test" in com_port:
-            connect_ser = serial.Serial(com_port[0], 9600, timeout=0)
-            return connect_ser
+        connect_ser = serial.Serial(com_port.device, 9600, timeout=0.5)
+        return connect_ser
 
 if __name__ == '__main__':
     start_total_time = time.time()
