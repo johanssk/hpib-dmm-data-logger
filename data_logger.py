@@ -125,13 +125,13 @@ def write_file(out, output_save_path, output_save_name, output_save_extention):
 
 def auto_connect_device():
     """
-    Runs through COM 0-4 and connects to correct device
+    Finds ports that are currently availiable and attempts to connect
 
     INPUT
     None
 
     OUTPUT
-    try_ser if connected and device responding
+    connect_ser if connected and device responding
     boolean False if no connection
     """
     logging.info("Connecting to device")
@@ -148,6 +148,7 @@ def auto_connect_device():
         else:
             continue
         # return connect_ser
+    return False
 
 if __name__ == '__main__':
     start_total_time = time.time()
