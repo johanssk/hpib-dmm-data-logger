@@ -75,7 +75,7 @@ def read_write(my_ser):
             logging.debug("Sending command: %s" % send)
             write("%s\n" % send)
 
-            sleep(sleep_read)
+            # sleep(sleep_read)
 
             return_string = rstrip(str(read(256)))
             append((current_time(), return_string))
