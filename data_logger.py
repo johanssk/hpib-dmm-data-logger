@@ -8,6 +8,7 @@ import logging
 import serial
 import tqdm
 import serial.tools.list_ports as lports
+from retrying import retry
 # import csv
 # from data_logger_configuration import *
 # from data_logger_configuration import COM_PORT
@@ -22,7 +23,7 @@ from data_logger_configuration import SETUP_CMD
 __version__ = 4
 
 logging.basicConfig(level=logging.DEBUG, format=' %(asctime)s - %(levelname)s- %(message)s')
-logging.disable(logging.DEBUG)
+# logging.disable(logging.DEBUG)
 
 class TimeError(Exception):
     pass
@@ -123,6 +124,7 @@ def write_file(out, output_save_path, output_save_name, output_save_extention):
             data.write(write_line)
     return full_filename
 
+@retry(stop_max_attempt_number=7, wait_fixed=2000)
 def auto_connect_device():
     """
     Finds ports that are currently availiable and attempts to connect
@@ -148,8 +150,8 @@ def auto_connect_device():
         else:
             continue
         # return connect_ser
-    logging.critical("Error connecting to device")
-    return False
+    logging.error("Error connecting to device")
+    raise Exception
 
 if __name__ == '__main__':
     start_total_time = time.time()
@@ -166,9 +168,14 @@ if __name__ == '__main__':
             raise PathError
         # assert os.path.isdir(LOG_SAVE_PATH)
 
-        ser = auto_connect_device()
-        if not ser:
+        try:
+            ser = auto_connect_device()
+        except:
+            logging.critical("Unable to connect to device")
             sys.exit()
+
+        # if not ser:
+        #     sys.exit()
         output = read_write(ser)
         if output != False:
             write_file(output, OUTPUT_SAVE_PATH, OUTPUT_SAVE_NAME, OUTPUT_SAVE_EXTENTION)
