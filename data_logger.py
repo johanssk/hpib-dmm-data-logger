@@ -148,6 +148,7 @@ def auto_connect_device():
         else:
             continue
         # return connect_ser
+    logging.critical("Error connecting to device")
     return False
 
 if __name__ == '__main__':
