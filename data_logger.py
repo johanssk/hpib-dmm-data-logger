@@ -4,6 +4,7 @@ import sys
 import time
 import datetime
 import logging
+
 import serial
 import tqdm
 # import csv
@@ -136,7 +137,7 @@ def auto_connect_device():
         logging.debug("Trying COM%i" % com_port)
         try:
             # try_ser = serial.Serial('\\\\.\\COM' + str(com_port), 9600, timeout=0.5)
-            try_ser = serial.Serial('COM' + str(com_port), 9600, timeout=0.5)
+            try_ser = serial.Serial('COM' + str(com_port), 9600, timeout=0)
             try_ser.write("%s\n" % SEND_CMD)
             time.sleep(TIME_SLEEP_READ)
             test_read = try_ser.read(256).strip()
