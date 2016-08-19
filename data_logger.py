@@ -4,6 +4,7 @@ import sys
 import time
 import datetime
 import logging
+
 import serial
 import tqdm
 import serial.tools.list_ports as lports
@@ -137,7 +138,7 @@ def auto_connect_device():
     logging.debug(ports)
     for com_port in ports:
         if "test" in com_port:
-            connect_ser = serial.Serial(com_port[0], 9600, timeout=0.1)
+            connect_ser = serial.Serial(com_port[0], 9600, timeout=0)
             return connect_ser
 
 if __name__ == '__main__':
