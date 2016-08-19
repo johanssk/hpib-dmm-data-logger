@@ -78,6 +78,7 @@ def read_write(my_ser):
             # sleep(sleep_read)
 
             return_string = rstrip(str(read(256)))
+            logging.debug("Return string: %s" % return_string)
             append((current_time(), return_string))
 
             if len(return_string) > 0:
