@@ -134,13 +134,16 @@ def auto_connect_device():
 
     OUTPUT
     connect_ser if connected and device responding
-    boolean False if no connection
+    Raise exception if no connection
     """
     logging.info("Connecting to device")
     ports = list(lports.comports())     # Change to .grep once determine what port returns
     logging.debug(ports)
     for com_port in ports:
         connect_ser = serial.Serial(com_port.device, 9600, timeout=0.5)
+
+        # Send command to ensure device is responding
+        # and connected to correct port
         connect_ser.write("%s\n" % SETUP_CMD)
         connect_ser.write("%s\n" % SEND_CMD)
         return_string = connect_ser.read(256)
@@ -149,7 +152,6 @@ def auto_connect_device():
             return connect_ser
         else:
             continue
-        # return connect_ser
     logging.error("Error connecting to device")
     raise Exception
 
