@@ -137,7 +137,7 @@ def auto_connect_device():
 
         # Send command to ensure device is responding
         # and connected to correct port
-        logging.info("Inputting device settings")
+        logging.info("Inputting device settings to: %s" % com_port.device)
         logging.info("Setup settings: %s" % SETUP_CMD)
         connect_ser.write("%s\n" % SETUP_CMD)
         connect_ser.write("%s\n" % SEND_CMD)
@@ -147,7 +147,7 @@ def auto_connect_device():
             return connect_ser
         else:
             continue
-    logging.error("Error connecting to device")
+    logging.warning("No connection to device")
     raise Exception
 
 if __name__ == '__main__':
