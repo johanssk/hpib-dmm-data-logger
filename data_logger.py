@@ -33,7 +33,7 @@ class PathError(Exception):
 
 def determine_loop_count(total_runtime, sample_time):
     num_loops = round(total_runtime / sample_time)
-    logging.debug("Loops to run: " % num_loops)
+    logging.debug("Loops to run: %i" % num_loops)
     return num_loops
 
 def read_write(my_ser):
@@ -79,7 +79,8 @@ def read_write(my_ser):
         while True:
             logging.debug("Run count: %s" % run_count)
             if run_count == run_loops:
-                break
+                logging.info("Done logging")
+                return out
             start_time = current_time()
 
             logging.debug("Sending command: %s" % send)
