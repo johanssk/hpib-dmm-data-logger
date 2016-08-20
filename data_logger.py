@@ -7,6 +7,8 @@ import logging
 
 import serial
 import tqdm
+import serial.tools.list_ports as lports
+from retrying import retry
 # import csv
 # from data_logger_configuration import *
 # from data_logger_configuration import COM_PORT
@@ -47,18 +49,13 @@ def read_write(my_ser):
     try:
         # Assigns variables from configuration file to local variables
         # Used to speed up while loop
-        setup = SETUP_CMD
         send = SEND_CMD
         sleep_read = TIME_SLEEP_READ
         sample = SAMPLE_TIME
 
-        logging.debug("Setup command: %s" % setup)
         logging.debug("Send command: %s" % send)
         logging.debug("Time sleep read: %s" % sleep_read)
         logging.debug("Sample time: %s" % sample)
-
-        logging.info("Inputting device settings")
-        my_ser.write("%s\n" % setup)
 
         # Initialize list to contain readings
         out = []
@@ -88,9 +85,8 @@ def read_write(my_ser):
             logging.debug("Sending command: %s" % send)
             write("%s\n" % send)
 
-            # sleep(sleep_read)
-
             return_string = rstrip(str(read(256)))
+            logging.debug("Return string: %s" % return_string)
             append((current_time(), return_string))
 
             if len(return_string) > 0:
@@ -136,38 +132,38 @@ def write_file(out, output_save_path, output_save_name, output_save_extention):
             data.write(write_line)
     return full_filename
 
+@retry(stop_max_attempt_number=7, wait_fixed=2000)
 def auto_connect_device():
     """
-    Runs through COM 0-4 and connects to correct device
+    Finds ports that are currently availiable and attempts to connect
 
     INPUT
     None
 
     OUTPUT
-    try_ser if connected and device responding
-    boolean False if no connection
+    connect_ser if connected and device responding
+    Raise exception if no connection
     """
     logging.info("Connecting to device")
-    for com_port in xrange(5):
-        logging.debug("Trying COM%i" % com_port)
-        try:
-            # try_ser = serial.Serial('\\\\.\\COM' + str(com_port), 9600, timeout=0.5)
-            try_ser = serial.Serial('COM' + str(com_port), 9600, timeout=0.5)
-            try_ser.write("%s\n" % SEND_CMD)
-            time.sleep(TIME_SLEEP_READ)
-            test_read = try_ser.read(256).strip()
-            logging.debug(test_read)
-            logging.debug("Length test_read: %i" % len(test_read))
-            if not len(test_read) > 0:
-                continue
-            logging.info("Connected to COM%i" % com_port)
-            return try_ser
-        except WindowsError:
+    ports = list(lports.comports())     # Change to .grep once determine what port returns
+    logging.debug(ports)
+    for com_port in ports:
+        connect_ser = serial.Serial(com_port.device, 9600, timeout=0.5)
+
+        # Send command to ensure device is responding
+        # and connected to correct port
+        logging.info("Inputting device settings to: %s" % com_port.device)
+        logging.info("Setup settings: %s" % SETUP_CMD)
+        connect_ser.write("%s\n" % SETUP_CMD)
+        connect_ser.write("%s\n" % SEND_CMD)
+        return_string = connect_ser.read(256)
+        return_string = str(return_string).rstrip()
+        if len(return_string) > 0:
+            return connect_ser
+        else:
             continue
-        except serial.SerialException:
-            continue
-    logging.critical("Error connecting to device")
-    return False
+    logging.warning("No connection to device")
+    raise Exception
 
 if __name__ == '__main__':
     start_total_time = time.time()
@@ -184,9 +180,12 @@ if __name__ == '__main__':
             raise PathError
         # assert os.path.isdir(LOG_SAVE_PATH)
 
-        ser = auto_connect_device()
-        if not ser:
+        try:
+            ser = auto_connect_device()
+        except:
+            logging.critical("Unable to connect to device")
             sys.exit()
+
         output = read_write(ser)
         if output != False:
             write_file(output, OUTPUT_SAVE_PATH, OUTPUT_SAVE_NAME, OUTPUT_SAVE_EXTENTION)
