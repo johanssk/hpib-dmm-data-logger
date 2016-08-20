@@ -196,9 +196,6 @@ if __name__ == '__main__':
     except KeyboardInterrupt, e:
         ser.close()
         logging.critical(e)
-    except WindowsError, e:
-        logging.critical("Cannot open port specified")
-        print "Error in configuration file"
     except TimeError:
         logging.critical("SAMPLE_TIME and TIME_SLEEP_READ must be greater than zero. Fix in configuration file.")
         print "Error in configuration file"
