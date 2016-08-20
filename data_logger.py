@@ -43,18 +43,13 @@ def read_write(my_ser):
     try:
         # Assigns variables from configuration file to local variables
         # Used to speed up while loop
-        setup = SETUP_CMD
         send = SEND_CMD
         sleep_read = TIME_SLEEP_READ
         sample = SAMPLE_TIME
 
-        logging.debug("Setup command: %s" % setup)
         logging.debug("Send command: %s" % send)
         logging.debug("Time sleep read: %s" % sleep_read)
         logging.debug("Sample time: %s" % sample)
-
-        logging.info("Inputting device settings")
-        my_ser.write("%s\n" % setup)
 
         # Initialize list to contain readings
         out = []
@@ -75,8 +70,6 @@ def read_write(my_ser):
 
             logging.debug("Sending command: %s" % send)
             write("%s\n" % send)
-
-            # sleep(sleep_read)
 
             return_string = rstrip(str(read(256)))
             logging.debug("Return string: %s" % return_string)
@@ -144,6 +137,8 @@ def auto_connect_device():
 
         # Send command to ensure device is responding
         # and connected to correct port
+        logging.info("Inputting device settings")
+        logging.info("Setup settings: %s" % SETUP_CMD)
         connect_ser.write("%s\n" % SETUP_CMD)
         connect_ser.write("%s\n" % SEND_CMD)
         return_string = connect_ser.read(256)
@@ -176,8 +171,6 @@ if __name__ == '__main__':
             logging.critical("Unable to connect to device")
             sys.exit()
 
-        # if not ser:
-        #     sys.exit()
         output = read_write(ser)
         if output != False:
             write_file(output, OUTPUT_SAVE_PATH, OUTPUT_SAVE_NAME, OUTPUT_SAVE_EXTENTION)
