@@ -19,7 +19,7 @@ from data_logger_configuration import TIME_SLEEP_READ
 from data_logger_configuration import SETUP_CMD
 
 logging.basicConfig(level=logging.DEBUG, format=' %(asctime)s - %(levelname)s- %(message)s')
-logging.disable(logging.DEBUG)
+# logging.disable(logging.DEBUG)
 
 class TimeError(Exception):
     pass
