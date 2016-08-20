@@ -17,6 +17,7 @@ from data_logger_configuration import SAMPLE_TIME
 from data_logger_configuration import OUTPUT_SAVE_EXTENTION
 from data_logger_configuration import TIME_SLEEP_READ
 from data_logger_configuration import SETUP_CMD
+from data_logger_configuration import TOTAL_RUNTIME
 
 __version__ = 4
 
@@ -27,6 +28,11 @@ class TimeError(Exception):
     pass
 class PathError(Exception):
     pass
+
+def determine_loop_count(total_runtime, sample_time):
+    num_loops = round(total_runtime / sample_time)
+    logging.debug("Loops to run: " % num_loops)
+    return num_loops
 
 def read_write(my_ser):
     """
@@ -65,10 +71,16 @@ def read_write(my_ser):
         rstrip = str.rstrip
         sleep = time.sleep
         append = out.append
+        if TOTAL_RUNTIME != -1:
+            run_loops = determine_loop_count(TOTAL_RUNTIME, sample)
 
         logging.info("Beginning data logging")
+        run_count = 0
 
         while True:
+            if run_loops and run_count == run_loops:
+                break
+
             start_time = current_time()
 
             logging.debug("Sending command: %s" % send)
@@ -90,6 +102,7 @@ def read_write(my_ser):
             if sample - offset > 0:
                 sleep(sample - offset)
             print current_time() - start_time
+            run_count += 1
     except KeyboardInterrupt:
         logging.info("Done logging")
         return out
