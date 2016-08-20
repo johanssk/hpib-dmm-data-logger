@@ -9,9 +9,8 @@ import serial
 import tqdm
 import serial.tools.list_ports as lports
 from retrying import retry
-# import csv
-# from data_logger_configuration import *
-# from data_logger_configuration import COM_PORT
+
+import error_codes
 from data_logger_configuration import OUTPUT_SAVE_PATH
 from data_logger_configuration import OUTPUT_SAVE_NAME
 from data_logger_configuration import SEND_CMD
@@ -25,15 +24,6 @@ __version__ = 4
 
 logging.basicConfig(level=logging.DEBUG, format=' %(asctime)s - %(levelname)s- %(message)s')
 logging.disable(logging.DEBUG)
-
-class TimeError(Exception):
-    pass
-class PathError(Exception):
-    pass
-class ReturnError(Exception):
-    pass
-class ConnectError(Exception):
-    pass
 
 def determine_loop_count(total_runtime, sample_time):
     num_loops = round(total_runtime / sample_time)
@@ -98,7 +88,7 @@ def read_write(my_ser):
                 append((current_time(), return_string))
             else:
                 logging.critical("No response from system")
-                raise ReturnError
+                raise error_codes.ReturnError
 
             offset = current_time() - start_time
             logging.debug("Offset: %f", offset)
@@ -168,7 +158,7 @@ def auto_connect_device():
         else:
             continue
     logging.warning("No connection to device")
-    raise ConnectError
+    raise error_codes.ConnectError
 
 if __name__ == '__main__':
     start_total_time = time.time()
@@ -176,11 +166,11 @@ if __name__ == '__main__':
 
     try:
         if not SAMPLE_TIME > 0:
-            raise TimeError
+            raise error_codes.TimeError
         if not TIME_SLEEP_READ > 0:
-            raise TimeError
+            raise error_codes.TimeError
         if not os.path.isdir(OUTPUT_SAVE_PATH):
-            raise PathError
+            raise error_codes.PathError
 
         try:
             ser = auto_connect_device()
@@ -190,10 +180,10 @@ if __name__ == '__main__':
             write_file(output, OUTPUT_SAVE_PATH, OUTPUT_SAVE_NAME, OUTPUT_SAVE_EXTENTION)
             ser.close()
             print "Total time sampled: %s" % str(read_time_total)
-        except ConnectError:
+        except error_codes.ConnectError:
             logging.critical("Unable to connect to device")
             sys.exit()
-        except ReturnError:
+        except error_codes.ReturnError:
             logging.critical("Exiting program")
             sys.exit()
         print "Total Time: %s" % (time.time()-start_total_time)
@@ -203,10 +193,10 @@ if __name__ == '__main__':
     except KeyboardInterrupt, e:
         ser.close()
         logging.critical(e)
-    except TimeError:
+    except error_codes.TimeError:
         logging.critical("SAMPLE_TIME and TIME_SLEEP_READ must be greater than zero. Fix in configuration file.")
         print "Error in configuration file"
-    except PathError:
+    except error_codes.PathError:
         logging.critical("Invalid save path. Fix in configuration file.")
         print "Error in configuration file"
     
