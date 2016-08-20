@@ -23,7 +23,7 @@ from data_logger_configuration import SETUP_CMD
 __version__ = 4
 
 logging.basicConfig(level=logging.DEBUG, format=' %(asctime)s - %(levelname)s- %(message)s')
-# logging.disable(logging.DEBUG)
+logging.disable(logging.DEBUG)
 
 class TimeError(Exception):
     pass
