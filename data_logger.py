@@ -30,6 +30,10 @@ class TimeError(Exception):
     pass
 class PathError(Exception):
     pass
+class ReturnError(Exception):
+    pass
+class ConnectError(Exception):
+    pass
 
 def determine_loop_count(total_runtime, sample_time):
     num_loops = round(total_runtime / sample_time)
@@ -88,13 +92,13 @@ def read_write(my_ser):
 
             return_string = rstrip(str(read(256)))
             logging.debug("Return string: %s" % return_string)
-            append((current_time(), return_string))
 
             if len(return_string) > 0:
                 print return_string
+                append((current_time(), return_string))
             else:
                 logging.critical("No response from system")
-                return False
+                raise ReturnError
 
             offset = current_time() - start_time
             logging.debug("Offset: %f", offset)
@@ -164,7 +168,7 @@ def auto_connect_device():
         else:
             continue
     logging.warning("No connection to device")
-    raise Exception
+    raise ConnectError
 
 if __name__ == '__main__':
     start_total_time = time.time()
@@ -180,19 +184,22 @@ if __name__ == '__main__':
 
         try:
             ser = auto_connect_device()
-        except:
-            logging.critical("Unable to connect to device")
-            sys.exit()
-
-        output = read_write(ser)
-        if output != False:
+            read_time_start = time.time()
+            output = read_write(ser)
+            read_time_total = time.time() - read_time_start
             write_file(output, OUTPUT_SAVE_PATH, OUTPUT_SAVE_NAME, OUTPUT_SAVE_EXTENTION)
             ser.close()
+            print "Total time sampled: %s" % str(read_time_total)
+        except ConnectError:
+            logging.critical("Unable to connect to device")
+            sys.exit()
+        except ReturnError:
+            logging.critical("Exiting program")
+            sys.exit()
         print "Total Time: %s" % (time.time()-start_total_time)
 
     except serial.SerialException, e:
         logging.critical(e)
-
     except KeyboardInterrupt, e:
         ser.close()
         logging.critical(e)
