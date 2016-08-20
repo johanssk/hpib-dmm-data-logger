@@ -171,15 +171,12 @@ if __name__ == '__main__':
     ser = serial.Serial()
 
     try:
-        # assert SAMPLE_TIME > 0
         if not SAMPLE_TIME > 0:
             raise TimeError
         if not TIME_SLEEP_READ > 0:
             raise TimeError
-        # assert TIME_SLEEP_READ > 0
         if not os.path.isdir(OUTPUT_SAVE_PATH):
             raise PathError
-        # assert os.path.isdir(LOG_SAVE_PATH)
 
         try:
             ser = auto_connect_device()
@@ -205,12 +202,7 @@ if __name__ == '__main__':
     except TimeError:
         logging.critical("SAMPLE_TIME and TIME_SLEEP_READ must be greater than zero. Fix in configuration file.")
         print "Error in configuration file"
-        # print("SAMPLE_TIME and TIME_SLEEP_READ must be greater than zero")
     except PathError:
         logging.critical("Invalid save path. Fix in configuration file.")
         print "Error in configuration file"
-    # except AssertionError, e:
-    #     print e
-    #     print "Fix errors in configuration file"
-    #     logging.error("Fix errors in configuration file")
     
