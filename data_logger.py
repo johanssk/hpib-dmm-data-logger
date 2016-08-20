@@ -73,14 +73,16 @@ def read_write(my_ser):
         append = out.append
         if TOTAL_RUNTIME != -1:
             run_loops = determine_loop_count(TOTAL_RUNTIME, sample)
+        else:
+            run_loops = -1
 
         logging.info("Beginning data logging")
         run_count = 0
 
         while True:
-            if run_loops and run_count == run_loops:
+            logging.debug("Run count: %s" % run_count)
+            if run_count == run_loops:
                 break
-
             start_time = current_time()
 
             logging.debug("Sending command: %s" % send)

@@ -12,5 +12,5 @@ SETUP_CMD = "F1RAN5"
 SEND_CMD = 'T3'
 SAMPLE_TIME = 2
 
-TIME_SLEEP_READ = 0.5 # May not read correctly if too low - Default = 1
-TOTAL_RUNTIME = -1
+TIME_SLEEP_READ = 0.5       # May not read correctly if too low - Default = 1
+TOTAL_RUNTIME = -1          # Set to -1 to run forever
