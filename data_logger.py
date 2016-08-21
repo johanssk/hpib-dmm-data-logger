@@ -170,6 +170,7 @@ if __name__ == '__main__':
         if not TIME_SLEEP_READ > 0:
             raise error_codes.TimeError
         if not os.path.isdir(OUTPUT_SAVE_PATH):
+            logging.debug(OUTPUT_SAVE_PATH)
             raise error_codes.PathError
 
         try:
