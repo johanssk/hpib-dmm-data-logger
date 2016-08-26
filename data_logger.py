@@ -40,36 +40,36 @@ def read_write(my_ser):
     OUTPUT
     out: List of tuples of format (time_of_reading, reading)
     """
+    # Assigns variables from configuration file to local variables
+    # Used to speed up while loop
+    send = SEND_CMD
+    sleep_read = TIME_SLEEP_READ
+    sample = SAMPLE_TIME
+
+    logging.debug("Send command: %s" % send)
+    logging.debug("Time sleep read: %s" % sleep_read)
+    logging.debug("Sample time: %s" % sample)
+
+    # Initialize list to contain readings
+    out = []
+
+    # Assign function lookups to variables
+    # Used to speed up while loop
+    current_time = time.time
+    write = my_ser.write
+    read = my_ser.read
+    rstrip = str.rstrip
+    sleep = time.sleep
+    append = out.append
+    if TOTAL_RUNTIME != -1:
+        run_loops = determine_loop_count(TOTAL_RUNTIME, sample)
+    else:
+        run_loops = -1
+
+    logging.info("Beginning data logging")
+    run_count = 0
+
     try:
-        # Assigns variables from configuration file to local variables
-        # Used to speed up while loop
-        send = SEND_CMD
-        sleep_read = TIME_SLEEP_READ
-        sample = SAMPLE_TIME
-
-        logging.debug("Send command: %s" % send)
-        logging.debug("Time sleep read: %s" % sleep_read)
-        logging.debug("Sample time: %s" % sample)
-
-        # Initialize list to contain readings
-        out = []
-
-        # Assign function lookups to variables
-        # Used to speed up while loop
-        current_time = time.time
-        write = my_ser.write
-        read = my_ser.read
-        rstrip = str.rstrip
-        sleep = time.sleep
-        append = out.append
-        if TOTAL_RUNTIME != -1:
-            run_loops = determine_loop_count(TOTAL_RUNTIME, sample)
-        else:
-            run_loops = -1
-
-        logging.info("Beginning data logging")
-        run_count = 0
-
         while not run_count == run_loops:
             logging.debug("Run count: %s" % run_count)
             start_time = current_time()
@@ -93,11 +93,10 @@ def read_write(my_ser):
                 sleep(sample - offset)
             print current_time() - start_time
             run_count += 1
-        logging.info("Done collecting data")
-        return out
     except KeyboardInterrupt:
-        logging.info("Done collecting data")
-        return out
+        pass
+    logging.info("Done collecting data")
+    return out
 
 def write_file(out, output_save_path, output_save_name, output_save_extention):
     """
