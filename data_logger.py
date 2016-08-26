@@ -4,6 +4,7 @@ import sys
 import time
 import datetime
 import logging
+import itertools
 
 import serial
 import tqdm
@@ -27,8 +28,12 @@ logging.disable(logging.DEBUG)
 
 def determine_loop_count(total_runtime, sample_time):
     num_loops = round(total_runtime / sample_time)
-    logging.debug("Loops to run: %i" % num_loops)
-    return num_loops
+    if num_loops > 0:
+        logging.info("Loops to run: %i" % num_loops)
+        return num_loops
+    else:
+        logging.info("Infinite loops")
+        return -1
 
 def read_write(my_ser):
     """
@@ -61,16 +66,16 @@ def read_write(my_ser):
     rstrip = str.rstrip
     sleep = time.sleep
     append = out.append
-    if TOTAL_RUNTIME != -1:
-        run_loops = determine_loop_count(TOTAL_RUNTIME, sample)
-    else:
-        run_loops = -1
+    
+    run_loops = determine_loop_count(TOTAL_RUNTIME, sample)
 
     logging.info("Beginning data logging")
-    run_count = 0
 
     try:
-        while not run_count == run_loops:
+        # while not run_count == run_loops:
+        for run_count in itertools.count():
+            if run_count == run_loops:
+                break
             logging.debug("Run count: %s" % run_count)
             start_time = current_time()
 
@@ -92,7 +97,6 @@ def read_write(my_ser):
             if sample - offset > 0:
                 sleep(sample - offset)
             print current_time() - start_time
-            run_count += 1
     except KeyboardInterrupt:
         pass
     logging.info("Done collecting data")
