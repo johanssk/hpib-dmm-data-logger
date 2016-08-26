@@ -155,8 +155,6 @@ def auto_connect_device():
         return_string = str(return_string).rstrip()
         if len(return_string) > 0:
             return connect_ser
-        else:
-            continue
     logging.warning("No connection to device")
     raise error_codes.ConnectError
 
