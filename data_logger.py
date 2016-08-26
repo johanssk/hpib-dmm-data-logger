@@ -70,11 +70,8 @@ def read_write(my_ser):
         logging.info("Beginning data logging")
         run_count = 0
 
-        while True:
+        while not run_count == run_loops:
             logging.debug("Run count: %s" % run_count)
-            if run_count == run_loops:
-                logging.info("Done logging")
-                return out
             start_time = current_time()
 
             logging.debug("Sending command: %s" % send)
@@ -96,8 +93,10 @@ def read_write(my_ser):
                 sleep(sample - offset)
             print current_time() - start_time
             run_count += 1
+        logging.info("Done collecting data")
+        return out
     except KeyboardInterrupt:
-        logging.info("Done logging")
+        logging.info("Done collecting data")
         return out
 
 def write_file(out, output_save_path, output_save_name, output_save_extention):
