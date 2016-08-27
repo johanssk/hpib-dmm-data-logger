@@ -4,7 +4,7 @@ import os
 GPIB_PORT = "5" # Just in case you need it for something
 
 # LOG_SAVE_PATH = os.path.normpath("C:\Users\johan\Desktop")
-OUTPUT_SAVE_PATH = os.path.join(os.sep, "home", "karl", "Desktop")
+OUTPUT_SAVE_PATH = os.path.join("c:", os.sep, "Users", "johan", "Desktop")
 OUTPUT_SAVE_NAME = "Data"
 OUTPUT_SAVE_EXTENTION = ".csv"
 
