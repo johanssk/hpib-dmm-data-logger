@@ -4,6 +4,7 @@ import sys
 import time
 import datetime
 import logging
+import itertools
 
 import serial
 import tqdm
@@ -56,8 +57,12 @@ def parse_config():
 
 def determine_loop_count(total_runtime, sample_time):
     num_loops = round(total_runtime / sample_time)
-    logging.debug("Loops to run: %i" % num_loops)
-    return num_loops
+    if num_loops > 0:
+        logging.info("Loops to run: %i" % num_loops)
+        return num_loops
+    else:
+        logging.info("Infinite loops")
+        return -1
 
 def read_write(my_ser, commands, times):
     """
@@ -69,39 +74,35 @@ def read_write(my_ser, commands, times):
     OUTPUT
     out: List of tuples of format (time_of_reading, reading)
     """
+    # Assigns variables from configuration file to local variables
+    # Used to speed up while loop
+    send = commands["send"]
+    sample = times["sample_time"]
+
+    logging.debug("Send command: %s" % send)
+    logging.debug("Sample time: %s" % sample)
+
+    # Initialize list to contain readings
+    out = []
+
+    # Assign function lookups to variables
+    # Used to speed up while loop
+    current_time = time.time
+    write = my_ser.write
+    read = my_ser.read
+    rstrip = str.rstrip
+    sleep = time.sleep
+    append = out.append
+    
+    run_loops = determine_loop_count(times["runtime"], sample)
+
+    logging.info("Beginning data logging")
+
     try:
-        # Assigns variables from configuration file to local variables
-        # Used to speed up while loop
-        send = commands["send"]
-        sample = times["sample_time"]
-
-        logging.debug("Send command: %s" % send)
-        logging.debug("Sample time: %s" % sample)
-
-        # Initialize list to contain readings
-        out = []
-
-        # Assign function lookups to variables
-        # Used to speed up while loop
-        current_time = time.time
-        write = my_ser.write
-        read = my_ser.read
-        rstrip = str.rstrip
-        sleep = time.sleep
-        append = out.append
-        if times["runtime"] != -1:
-            run_loops = determine_loop_count(times[1], sample)
-        else:
-            run_loops = -1
-
-        logging.info("Beginning data logging")
-        run_count = 0
-
-        while True:
-            logging.debug("Run count: %s" % run_count)
+        for run_count in itertools.count():
             if run_count == run_loops:
-                logging.info("Done logging")
-                return out
+                break
+            logging.debug("Run count: %s" % run_count)
             start_time = current_time()
 
             logging.info("Sending command: %s" % send)
@@ -122,10 +123,10 @@ def read_write(my_ser, commands, times):
             if sample - offset > 0:
                 sleep(sample - offset)
             print current_time() - start_time
-            run_count += 1
     except KeyboardInterrupt:
-        logging.info("Done logging")
-        return out
+        pass
+    logging.info("Done collecting data")
+    return out
 
 def write_file(out, save_data):
     """
@@ -145,11 +146,11 @@ def write_file(out, save_data):
     filename = "%s %s%s" % (save_data["name"], file_time, save_data["ext"])
     logging.debug(filename)
 
-    save_path = os.path.join(os.path.expanduser("~"), save_data["path"])
+    save_path = os.path.join(os.environ["USERPROFILE"], save_data["path"])
     full_filename = os.path.join(save_path, filename)
     logging.info("Saving as: %s", full_filename)
 
-    with open(full_filename, 'a') as data:
+    with open(full_filename, 'a+') as data:
         for pair in tqdm.tqdm(out):
             write_line = "%s,%s\n" % (str(pair[0]), str(pair[1]))
             data.write(write_line)
@@ -183,8 +184,6 @@ def auto_connect_device(commands):
         return_string = str(return_string).rstrip()
         if len(return_string) > 0:
             return connect_ser
-        else:
-            continue
     logging.warning("No connection to device")
     raise error_codes.ConnectError
 
