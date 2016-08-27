@@ -28,20 +28,23 @@ def parse_config():
 
     if result:
         # Save Options
-        OUTPUT_SAVE_PATH = config["Save"]["OUTPUT_SAVE_PATH"]
-        OUTPUT_SAVE_NAME = config["Save"]["OUTPUT_SAVE_NAME"]
-        OUTPUT_SAVE_EXTENTION = config["Save"]["OUTPUT_SAVE_EXTENTION"]
-        SAVE_DATA = [OUTPUT_SAVE_PATH, OUTPUT_SAVE_NAME, OUTPUT_SAVE_EXTENTION]
+        SAVE_DATA = {}
+        SAVE_DATA["path"] = config["Save"]["OUTPUT_SAVE_PATH"]
+        SAVE_DATA["name"] = config["Save"]["OUTPUT_SAVE_NAME"]
+        SAVE_DATA["ext"] = config["Save"]["OUTPUT_SAVE_EXTENTION"]
+        # SAVE_DATA = [OUTPUT_SAVE_PATH, OUTPUT_SAVE_NAME, OUTPUT_SAVE_EXTENTION]
 
         # System Commands
-        SETUP_CMD = config["Commands"]["SETUP_CMD"]
-        SEND_CMD = config["Commands"]["SEND_CMD"]
-        COMMANDS = [SETUP_CMD, SEND_CMD]
+        COMMANDS = {}
+        COMMANDS["setup"] = config["Commands"]["SETUP_CMD"]
+        COMMANDS["send"] = config["Commands"]["SEND_CMD"]
+        # COMMANDS = [SETUP_CMD, SEND_CMD]
 
         # Sample and run time
-        SAMPLE_TIME = config["Times"]["SAMPLE_TIME"]
-        TOTAL_RUNTIME = config["Times"]["TOTAL_RUNTIME"]
-        TIMES = [SAMPLE_TIME, TOTAL_RUNTIME]
+        TIMES = {}
+        TIMES["sample_time"] = config["Times"]["SAMPLE_TIME"]
+        TIMES["runtime"] = config["Times"]["TOTAL_RUNTIME"]
+        # TIMES = [SAMPLE_TIME, TOTAL_RUNTIME]
 
         return SAVE_DATA, COMMANDS, TIMES
     else:
@@ -69,8 +72,8 @@ def read_write(my_ser, commands, times):
     try:
         # Assigns variables from configuration file to local variables
         # Used to speed up while loop
-        send = commands[1]
-        sample = times[0]
+        send = commands["send"]
+        sample = times["sample_time"]
 
         logging.debug("Send command: %s" % send)
         logging.debug("Sample time: %s" % sample)
@@ -86,7 +89,7 @@ def read_write(my_ser, commands, times):
         rstrip = str.rstrip
         sleep = time.sleep
         append = out.append
-        if times[1] != -1:
+        if times["runtime"] != -1:
             run_loops = determine_loop_count(times[1], sample)
         else:
             run_loops = -1
@@ -139,13 +142,13 @@ def write_file(out, save_data):
     now = datetime.datetime.now()
     file_time = now.strftime("%Y-%m-%d %H_%M_%S")
 
-    filename = "%s %s%s" % (save_data[1], file_time, save_data[2])
+    filename = "%s %s%s" % (save_data["name"], file_time, save_data["ext"])
     logging.debug(filename)
 
-    full_filename = os.path.join(save_data[0], filename)
+    full_filename = os.path.join(save_data["path"], filename)
     logging.info("Saving as: %s", full_filename)
 
-    with open(full_filename, 'a+') as data:
+    with open(full_filename, 'a') as data:
         for pair in tqdm.tqdm(out):
             write_line = "%s,%s\n" % (str(pair[0]), str(pair[1]))
             data.write(write_line)
@@ -172,9 +175,9 @@ def auto_connect_device(commands):
         # Send command to ensure device is responding
         # and connected to correct port
         logging.info("Inputting device settings to: %s" % com_port.device)
-        logging.info("Setup settings: %s" % commands[0])
-        connect_ser.write("%s\n" % commands[0])
-        connect_ser.write("%s\n" % commands[1])
+        logging.info("Setup settings: %s" % commands["setup"])
+        connect_ser.write("%s\n" % commands["setup"])
+        connect_ser.write("%s\n" % commands["send"])
         return_string = connect_ser.read(256)
         return_string = str(return_string).rstrip()
         if len(return_string) > 0:
