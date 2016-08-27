@@ -145,7 +145,8 @@ def write_file(out, save_data):
     filename = "%s %s%s" % (save_data["name"], file_time, save_data["ext"])
     logging.debug(filename)
 
-    full_filename = os.path.join(save_data["path"], filename)
+    save_path = os.path.join(os.path.expanduser("~"), save_data["path"])
+    full_filename = os.path.join(save_path, filename)
     logging.info("Saving as: %s", full_filename)
 
     with open(full_filename, 'a') as data:
