@@ -146,7 +146,11 @@ def write_file(out, save_data):
     filename = "%s %s%s" % (save_data["name"], file_time, save_data["ext"])
     logging.debug(filename)
 
-    save_path = os.path.join(os.environ["USERPROFILE"], save_data["path"])
+    if os.environ.has_key("USERPROFILE"):
+        user_path = os.environ["USERPROFILE"]
+    else:
+        user_path = os.path.expanduser("~")
+    save_path = os.path.join(user_path, save_data["path"])
     full_filename = os.path.join(save_path, filename)
     logging.info("Saving as: %s", full_filename)
 
