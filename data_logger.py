@@ -10,27 +10,53 @@ import tqdm
 import serial.tools.list_ports as lports
 from retrying import retry
 
+from configobj import ConfigObj
+from validate import Validator
+
 import error_codes
-from data_logger_configuration import OUTPUT_SAVE_PATH
-from data_logger_configuration import OUTPUT_SAVE_NAME
-from data_logger_configuration import SEND_CMD
-from data_logger_configuration import SAMPLE_TIME
-from data_logger_configuration import OUTPUT_SAVE_EXTENTION
-from data_logger_configuration import TIME_SLEEP_READ
-from data_logger_configuration import SETUP_CMD
-from data_logger_configuration import TOTAL_RUNTIME
 
 __version__ = 4
 
 logging.basicConfig(level=logging.DEBUG, format=' %(asctime)s - %(levelname)s- %(message)s')
 logging.disable(logging.DEBUG)
 
+def parse_config():
+    config = ConfigObj('config.ini', configspec='configspec.ini')
+
+    validator = Validator()
+    result = config.validate(validator)
+
+    if result:
+        # Save Options
+        OUTPUT_SAVE_PATH = config["Save"]["OUTPUT_SAVE_PATH"]
+        OUTPUT_SAVE_NAME = config["Save"]["OUTPUT_SAVE_NAME"]
+        OUTPUT_SAVE_EXTENTION = config["Save"]["OUTPUT_SAVE_EXTENTION"]
+        SAVE_DATA = [OUTPUT_SAVE_PATH, OUTPUT_SAVE_NAME, OUTPUT_SAVE_EXTENTION]
+
+        # System Commands
+        SETUP_CMD = config["Commands"]["SETUP_CMD"]
+        SEND_CMD = config["Commands"]["SEND_CMD"]
+        COMMANDS = [SETUP_CMD, SEND_CMD]
+
+        # Sample and run time
+        SAMPLE_TIME = config["Times"]["SAMPLE_TIME"]
+        TOTAL_RUNTIME = config["Times"]["TOTAL_RUNTIME"]
+        TIMES = [SAMPLE_TIME, TOTAL_RUNTIME]
+
+        return SAVE_DATA, COMMANDS, TIMES
+    else:
+        print "Could not validate config file"
+        logging.critical("Could not validate config file")
+        sys.exit()
+
+
+
 def determine_loop_count(total_runtime, sample_time):
     num_loops = round(total_runtime / sample_time)
     logging.debug("Loops to run: %i" % num_loops)
     return num_loops
 
-def read_write(my_ser):
+def read_write(my_ser, commands, times):
     """
     Sets up device and sends commands, then reads response
 
@@ -43,12 +69,10 @@ def read_write(my_ser):
     try:
         # Assigns variables from configuration file to local variables
         # Used to speed up while loop
-        send = SEND_CMD
-        sleep_read = TIME_SLEEP_READ
-        sample = SAMPLE_TIME
+        send = commands[1]
+        sample = times[0]
 
         logging.debug("Send command: %s" % send)
-        logging.debug("Time sleep read: %s" % sleep_read)
         logging.debug("Sample time: %s" % sample)
 
         # Initialize list to contain readings
@@ -62,8 +86,8 @@ def read_write(my_ser):
         rstrip = str.rstrip
         sleep = time.sleep
         append = out.append
-        if TOTAL_RUNTIME != -1:
-            run_loops = determine_loop_count(TOTAL_RUNTIME, sample)
+        if times[1] != -1:
+            run_loops = determine_loop_count(times[1], sample)
         else:
             run_loops = -1
 
@@ -100,7 +124,7 @@ def read_write(my_ser):
         logging.info("Done logging")
         return out
 
-def write_file(out, output_save_path, output_save_name, output_save_extention):
+def write_file(out, save_data):
     """
     Writes data to specified file
 
@@ -115,10 +139,10 @@ def write_file(out, output_save_path, output_save_name, output_save_extention):
     now = datetime.datetime.now()
     file_time = now.strftime("%Y-%m-%d %H_%M_%S")
 
-    filename = "%s %s%s" % (output_save_name, file_time, output_save_extention)
+    filename = "%s %s%s" % (save_data[1], file_time, save_data[2])
     logging.debug(filename)
 
-    full_filename = os.path.join(output_save_path, filename)
+    full_filename = os.path.join(save_data[0], filename)
     logging.info("Saving as: %s", full_filename)
 
     with open(full_filename, 'a+') as data:
@@ -128,7 +152,7 @@ def write_file(out, output_save_path, output_save_name, output_save_extention):
     return full_filename
 
 @retry(stop_max_attempt_number=7, wait_fixed=2000)
-def auto_connect_device():
+def auto_connect_device(commands):
     """
     Finds ports that are currently availiable and attempts to connect
 
@@ -148,9 +172,9 @@ def auto_connect_device():
         # Send command to ensure device is responding
         # and connected to correct port
         logging.info("Inputting device settings to: %s" % com_port.device)
-        logging.info("Setup settings: %s" % SETUP_CMD)
-        connect_ser.write("%s\n" % SETUP_CMD)
-        connect_ser.write("%s\n" % SEND_CMD)
+        logging.info("Setup settings: %s" % commands[0])
+        connect_ser.write("%s\n" % commands[0])
+        connect_ser.write("%s\n" % commands[1])
         return_string = connect_ser.read(256)
         return_string = str(return_string).rstrip()
         if len(return_string) > 0:
@@ -165,20 +189,13 @@ if __name__ == '__main__':
     ser = serial.Serial()
 
     try:
-        if not SAMPLE_TIME > 0:
-            raise error_codes.TimeError
-        if not TIME_SLEEP_READ > 0:
-            raise error_codes.TimeError
-        if not os.path.isdir(OUTPUT_SAVE_PATH):
-            logging.debug(OUTPUT_SAVE_PATH)
-            raise error_codes.PathError
-
         try:
-            ser = auto_connect_device()
+            SAVE_DATA, COMMANDS, TIMES = parse_config()
+            ser = auto_connect_device(COMMANDS)
             read_time_start = time.time()
-            output = read_write(ser)
+            output = read_write(ser, COMMANDS, TIMES)
             read_time_total = time.time() - read_time_start
-            write_file(output, OUTPUT_SAVE_PATH, OUTPUT_SAVE_NAME, OUTPUT_SAVE_EXTENTION)
+            write_file(output, SAVE_DATA)
             ser.close()
             print "Total time sampled: %s" % str(read_time_total)
         except error_codes.ConnectError:
