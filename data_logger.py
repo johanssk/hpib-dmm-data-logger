@@ -104,11 +104,11 @@ def read_write(my_ser, commands, times):
                 return out
             start_time = current_time()
 
-            logging.debug("Sending command: %s" % send)
+            logging.info("Sending command: %s" % send)
             write("%s\n" % send)
 
             return_string = rstrip(str(read(256)))
-            logging.debug("Return string: %s" % return_string)
+            logging.info("Return string: %s" % return_string)
 
             if len(return_string) > 0:
                 print return_string
