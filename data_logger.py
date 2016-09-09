@@ -1,17 +1,16 @@
 
+import datetime
+import itertools
+import logging
 import os.path
 import sys
 import time
-import datetime
-import logging
-import itertools
 
 import serial
-import tqdm
 import serial.tools.list_ports as lports
-from retrying import retry
-
+import tqdm
 from configobj import ConfigObj
+from retrying import retry
 from validate import Validator
 
 import error_codes
@@ -224,4 +223,3 @@ if __name__ == '__main__':
     except error_codes.PathError:
         logging.critical("Invalid save path. Fix in configuration file.")
         print "Error in configuration file"
-    
