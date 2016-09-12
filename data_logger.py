@@ -98,6 +98,7 @@ def read_write(my_ser, commands, times):
     logging.info("Beginning data logging")
 
     try:
+        relative_time_offset = current_time()
         for run_count in itertools.count():
             if run_count == run_loops:
                 break
@@ -112,7 +113,7 @@ def read_write(my_ser, commands, times):
 
             if len(return_string) > 0:
                 print return_string
-                append((current_time(), return_string))
+                append((current_time() - relative_time_offset, return_string))
             else:
                 logging.critical("No response from system")
                 raise error_codes.ReturnError
