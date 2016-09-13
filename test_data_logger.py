@@ -4,7 +4,6 @@ import os.path
 
 from hypothesis import given, assume
 import hypothesis.strategies as st
-from hypothesis.extra.datetime import datetimes
 # from pytest_mock import mocker
 from data_logger import write_file
 
@@ -14,7 +13,12 @@ def test_write_file(tmpdir, out):
     OUTPUT_SAVE_EXTENTION = ".csv"
     OUTPUT_SAVE_PATH = str(tmpdir)
     OUTPUT_SAVE_NAME = "Data"
-    file_name = write_file(out, OUTPUT_SAVE_PATH, OUTPUT_SAVE_NAME, OUTPUT_SAVE_EXTENTION)
+    save_data = {
+        "name":OUTPUT_SAVE_NAME,
+        "ext":OUTPUT_SAVE_EXTENTION,
+        "path":OUTPUT_SAVE_PATH
+        }
+    file_name = write_file(out, save_data)
     assert(os.path.isfile(file_name))
     # with open(file_name, 'r') as check:
     #     for i, line in enumerate(check):
