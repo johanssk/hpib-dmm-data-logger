@@ -11,12 +11,15 @@ from data_logger import determine_loop_count
 
 
 # Re-write to follow correct rounding procedure
+# Tests to ensure 
 @given(st.floats(allow_nan=False, allow_infinity=False), st.floats(allow_nan=False, allow_infinity=False, min_value=1))
 def test_determine_loop_count(total_runtime, sample_time):
     assume(total_runtime > sample_time)
     num_loops = round(total_runtime / sample_time)
     if num_loops > 0:
         assert determine_loop_count(total_runtime, sample_time) == num_loops
+    else:
+        assert determine_loop_count(total_runtime, sample_time) == -1
 
 @given(st.lists(st.tuples(st.floats(allow_nan=False, allow_infinity=False), st.floats(allow_nan=False, allow_infinity=False))))
 def test_write_file(tmpdir, out):
