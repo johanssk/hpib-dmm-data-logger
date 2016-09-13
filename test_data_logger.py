@@ -1,6 +1,7 @@
 # import mock
 import pytest
 import os.path
+import time
 
 from hypothesis import given, assume
 import hypothesis.strategies as st
@@ -20,8 +21,11 @@ def test_write_file(tmpdir, out):
         }
     file_name = write_file(out, save_data)
     assert(os.path.isfile(file_name))
-    # with open(file_name, 'r') as check:
-    #     for i, line in enumerate(check):
-    #         print i
-    #         output = out[i]
-    #         assert line == "%s,%s\n" % (str(output[0]), str(output[1]))
+    with open(file_name, 'r') as check:
+        print out
+        check.readlines() # Why is this needed?
+        check = check.readlines()
+        for i, line in enumerate(check[:-1]):
+            print i
+            output = out[i]
+            assert line == "%s,%s\n" % (str(output[0]), str(output[1]))
