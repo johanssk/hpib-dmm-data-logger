@@ -1,4 +1,3 @@
-
 import datetime
 import itertools
 import logging
@@ -17,8 +16,10 @@ import error_codes
 
 __version__ = 4
 
-logging.basicConfig(level=logging.DEBUG, format=' %(asctime)s - %(levelname)s- %(message)s')
+logging.basicConfig(
+    level=logging.DEBUG, format=' %(asctime)s - %(levelname)s- %(message)s')
 logging.disable(logging.DEBUG)
+
 
 def parse_config():
     config = ConfigObj('config.ini', configspec='configspec.ini')
@@ -53,7 +54,6 @@ def parse_config():
         sys.exit()
 
 
-
 def determine_loop_count(total_runtime, sample_time):
     """
     Used to determine number of loops the program should run
@@ -73,6 +73,7 @@ def determine_loop_count(total_runtime, sample_time):
     else:
         logging.info("Infinite loops")
         return -1
+
 
 def read_write(my_ser, commands, times):
     """
@@ -139,6 +140,7 @@ def read_write(my_ser, commands, times):
     logging.info("Done collecting data")
     return out
 
+
 def write_file(out, save_data):
     """
     Writes data to specified file
@@ -171,6 +173,7 @@ def write_file(out, save_data):
             data.write(write_line)
     return full_filename
 
+
 @retry(stop_max_attempt_number=7, wait_fixed=2000)
 def auto_connect_device(commands):
     """
@@ -184,7 +187,8 @@ def auto_connect_device(commands):
     Raise exception if no connection
     """
     logging.info("Connecting to device")
-    ports = list(lports.comports())     # Change to .grep once determine what port returns
+    ports = list(
+        lports.comports())  # Change to .grep once determine what port returns
     logging.debug(ports)
     for com_port in ports:
         connect_ser = serial.Serial(com_port.device, 9600, timeout=0.5)
@@ -201,6 +205,7 @@ def auto_connect_device(commands):
             return connect_ser
     logging.warning("No connection to device")
     raise error_codes.ConnectError
+
 
 if __name__ == '__main__':
     START_TOTAL_TIME = time.time()
@@ -222,7 +227,7 @@ if __name__ == '__main__':
         except error_codes.ReturnError:
             logging.critical("Exiting program")
             sys.exit()
-        print "Total Time: %s" % (time.time()-START_TOTAL_TIME)
+        print "Total Time: %s" % (time.time() - START_TOTAL_TIME)
 
     except serial.SerialException, e:
         logging.critical(e)
@@ -231,8 +236,7 @@ if __name__ == '__main__':
         logging.critical(e)
     except error_codes.TimeError:
         logging.critical(
-            "SAMPLE_TIME and TIME_SLEEP_READ must be greater than zero. Fix in configuration file."
-            )
+            "SAMPLE_TIME and TIME_SLEEP_READ must be greater than zero. Fix in configuration file.")
         print "Error in configuration file"
     except error_codes.PathError:
         logging.critical("Invalid save path. Fix in configuration file.")
