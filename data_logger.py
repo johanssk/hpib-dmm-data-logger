@@ -28,25 +28,25 @@ def parse_config():
 
     if result:
         # Save Options
-        SAVE_DATA = {}
-        SAVE_DATA["path"] = config["Save"]["OUTPUT_SAVE_PATH"]
-        SAVE_DATA["name"] = config["Save"]["OUTPUT_SAVE_NAME"]
-        SAVE_DATA["ext"] = config["Save"]["OUTPUT_SAVE_EXTENTION"]
+        save_data = {}
+        save_data["path"] = config["Save"]["OUTPUT_SAVE_PATH"]
+        save_data["name"] = config["Save"]["OUTPUT_SAVE_NAME"]
+        save_data["ext"] = config["Save"]["OUTPUT_SAVE_EXTENTION"]
         # SAVE_DATA = [OUTPUT_SAVE_PATH, OUTPUT_SAVE_NAME, OUTPUT_SAVE_EXTENTION]
 
         # System Commands
-        COMMANDS = {}
-        COMMANDS["setup"] = config["Commands"]["SETUP_CMD"]
-        COMMANDS["send"] = config["Commands"]["SEND_CMD"]
+        commands = {}
+        commands["setup"] = config["Commands"]["SETUP_CMD"]
+        commands["send"] = config["Commands"]["SEND_CMD"]
         # COMMANDS = [SETUP_CMD, SEND_CMD]
 
         # Sample and run time
-        TIMES = {}
-        TIMES["sample_time"] = config["Times"]["SAMPLE_TIME"]
-        TIMES["runtime"] = config["Times"]["TOTAL_RUNTIME"]
+        times = {}
+        times["sample_time"] = config["Times"]["SAMPLE_TIME"]
+        times["runtime"] = config["Times"]["TOTAL_RUNTIME"]
         # TIMES = [SAMPLE_TIME, TOTAL_RUNTIME]
 
-        return SAVE_DATA, COMMANDS, TIMES
+        return save_data, commands, times
     else:
         print "Could not validate config file"
         logging.critical("Could not validate config file")
@@ -103,7 +103,7 @@ def read_write(my_ser, commands, times):
     rstrip = str.rstrip
     sleep = time.sleep
     append = out.append
-    
+
     run_loops = determine_loop_count(times["runtime"], sample)
 
     logging.info("Beginning data logging")
@@ -203,26 +203,26 @@ def auto_connect_device(commands):
     raise error_codes.ConnectError
 
 if __name__ == '__main__':
-    start_total_time = time.time()
+    START_TOTAL_TIME = time.time()
     ser = serial.Serial()
 
     try:
         try:
-            save_data, commands, times = parse_config()
-            ser = auto_connect_device(commands)
-            read_time_start = time.time()
-            output = read_write(ser, commands, times)
-            read_time_total = time.time() - read_time_start
-            write_file(output, save_data)
+            SAVE_DATA, COMMANDS, TIMES = parse_config()
+            ser = auto_connect_device(COMMANDS)
+            READ_TIME_START = time.time()
+            OUTPUT = read_write(ser, COMMANDS, TIMES)
+            READ_TIME_TOTAL = time.time() - READ_TIME_START
+            write_file(OUTPUT, SAVE_DATA)
             ser.close()
-            print "Total time sampled: %s" % str(read_time_total)
+            print "Total time sampled: %s" % str(READ_TIME_TOTAL)
         except error_codes.ConnectError:
             logging.critical("Unable to connect to device")
             sys.exit()
         except error_codes.ReturnError:
             logging.critical("Exiting program")
             sys.exit()
-        print "Total Time: %s" % (time.time()-start_total_time)
+        print "Total Time: %s" % (time.time()-START_TOTAL_TIME)
 
     except serial.SerialException, e:
         logging.critical(e)
@@ -230,7 +230,9 @@ if __name__ == '__main__':
         ser.close()
         logging.critical(e)
     except error_codes.TimeError:
-        logging.critical("SAMPLE_TIME and TIME_SLEEP_READ must be greater than zero. Fix in configuration file.")
+        logging.critical(
+            "SAMPLE_TIME and TIME_SLEEP_READ must be greater than zero. Fix in configuration file."
+            )
         print "Error in configuration file"
     except error_codes.PathError:
         logging.critical("Invalid save path. Fix in configuration file.")
