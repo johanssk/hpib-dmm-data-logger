@@ -28,25 +28,25 @@ def parse_config():
 
     if result:
         # Save Options
-        SAVE_DATA = {}
-        SAVE_DATA["path"] = config["Save"]["OUTPUT_SAVE_PATH"]
-        SAVE_DATA["name"] = config["Save"]["OUTPUT_SAVE_NAME"]
-        SAVE_DATA["ext"] = config["Save"]["OUTPUT_SAVE_EXTENTION"]
+        save_data = {}
+        save_data["path"] = config["Save"]["OUTPUT_SAVE_PATH"]
+        save_data["name"] = config["Save"]["OUTPUT_SAVE_NAME"]
+        save_data["ext"] = config["Save"]["OUTPUT_SAVE_EXTENTION"]
         # SAVE_DATA = [OUTPUT_SAVE_PATH, OUTPUT_SAVE_NAME, OUTPUT_SAVE_EXTENTION]
 
         # System Commands
-        COMMANDS = {}
-        COMMANDS["setup"] = config["Commands"]["SETUP_CMD"]
-        COMMANDS["send"] = config["Commands"]["SEND_CMD"]
+        commands = {}
+        commands["setup"] = config["Commands"]["SETUP_CMD"]
+        commands["send"] = config["Commands"]["SEND_CMD"]
         # COMMANDS = [SETUP_CMD, SEND_CMD]
 
         # Sample and run time
-        TIMES = {}
-        TIMES["sample_time"] = config["Times"]["SAMPLE_TIME"]
-        TIMES["runtime"] = config["Times"]["TOTAL_RUNTIME"]
+        times = {}
+        times["sample_time"] = config["Times"]["SAMPLE_TIME"]
+        times["runtime"] = config["Times"]["TOTAL_RUNTIME"]
         # TIMES = [SAMPLE_TIME, TOTAL_RUNTIME]
 
-        return SAVE_DATA, COMMANDS, TIMES
+        return save_data, commands, times
     else:
         print "Could not validate config file"
         logging.critical("Could not validate config file")
@@ -55,9 +55,20 @@ def parse_config():
 
 
 def determine_loop_count(total_runtime, sample_time):
+    """
+    Used to determine number of loops the program should run
+    by dividing total_runtime and sample_time
+
+    INPUT:
+        total_runtime: float
+        sample_time: float
+
+    OUTPUT:
+        returns -1 if total_runtime is -1, num_loops otherwise
+    """
     num_loops = round(total_runtime / sample_time)
     if num_loops > 0:
-        logging.info("Loops to run: %i" % num_loops)
+        logging.info("Loops to run: %i", num_loops)
         return num_loops
     else:
         logging.info("Infinite loops")
@@ -78,8 +89,8 @@ def read_write(my_ser, commands, times):
     send = commands["send"]
     sample = times["sample_time"]
 
-    logging.debug("Send command: %s" % send)
-    logging.debug("Sample time: %s" % sample)
+    logging.debug("Send command: %s", send)
+    logging.debug("Sample time: %s", sample)
 
     # Initialize list to contain readings
     out = []
@@ -92,7 +103,7 @@ def read_write(my_ser, commands, times):
     rstrip = str.rstrip
     sleep = time.sleep
     append = out.append
-    
+
     run_loops = determine_loop_count(times["runtime"], sample)
 
     logging.info("Beginning data logging")
@@ -102,14 +113,14 @@ def read_write(my_ser, commands, times):
         for run_count in itertools.count():
             if run_count == run_loops:
                 break
-            logging.debug("Run count: %s" % run_count)
+            logging.debug("Run count: %s", run_count)
             start_time = current_time()
 
-            logging.info("Sending command: %s" % send)
+            logging.info("Sending command: %s", send)
             write("%s\n" % send)
 
             return_string = rstrip(str(read(256)))
-            logging.info("Return string: %s" % return_string)
+            logging.info("Return string: %s", return_string)
 
             if len(return_string) > 0:
                 print return_string
@@ -180,8 +191,8 @@ def auto_connect_device(commands):
 
         # Send command to ensure device is responding
         # and connected to correct port
-        logging.info("Inputting device settings to: %s" % com_port.device)
-        logging.info("Setup settings: %s" % commands["setup"])
+        logging.info("Inputting device settings to: %s", com_port.device)
+        logging.info("Setup settings: %s", commands["setup"])
         connect_ser.write("%s\n" % commands["setup"])
         connect_ser.write("%s\n" % commands["send"])
         return_string = connect_ser.read(256)
@@ -192,26 +203,26 @@ def auto_connect_device(commands):
     raise error_codes.ConnectError
 
 if __name__ == '__main__':
-    start_total_time = time.time()
+    START_TOTAL_TIME = time.time()
     ser = serial.Serial()
 
     try:
         try:
             SAVE_DATA, COMMANDS, TIMES = parse_config()
             ser = auto_connect_device(COMMANDS)
-            read_time_start = time.time()
-            output = read_write(ser, COMMANDS, TIMES)
-            read_time_total = time.time() - read_time_start
-            write_file(output, SAVE_DATA)
+            READ_TIME_START = time.time()
+            OUTPUT = read_write(ser, COMMANDS, TIMES)
+            READ_TIME_TOTAL = time.time() - READ_TIME_START
+            write_file(OUTPUT, SAVE_DATA)
             ser.close()
-            print "Total time sampled: %s" % str(read_time_total)
+            print "Total time sampled: %s" % str(READ_TIME_TOTAL)
         except error_codes.ConnectError:
             logging.critical("Unable to connect to device")
             sys.exit()
         except error_codes.ReturnError:
             logging.critical("Exiting program")
             sys.exit()
-        print "Total Time: %s" % (time.time()-start_total_time)
+        print "Total Time: %s" % (time.time()-START_TOTAL_TIME)
 
     except serial.SerialException, e:
         logging.critical(e)
@@ -219,7 +230,9 @@ if __name__ == '__main__':
         ser.close()
         logging.critical(e)
     except error_codes.TimeError:
-        logging.critical("SAMPLE_TIME and TIME_SLEEP_READ must be greater than zero. Fix in configuration file.")
+        logging.critical(
+            "SAMPLE_TIME and TIME_SLEEP_READ must be greater than zero. Fix in configuration file."
+            )
         print "Error in configuration file"
     except error_codes.PathError:
         logging.critical("Invalid save path. Fix in configuration file.")
