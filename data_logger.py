@@ -33,19 +33,16 @@ def parse_config():
         save_data["path"] = config["Save"]["OUTPUT_SAVE_PATH"]
         save_data["name"] = config["Save"]["OUTPUT_SAVE_NAME"]
         save_data["ext"] = config["Save"]["OUTPUT_SAVE_EXTENTION"]
-        # SAVE_DATA = [OUTPUT_SAVE_PATH, OUTPUT_SAVE_NAME, OUTPUT_SAVE_EXTENTION]
 
         # System Commands
         commands = {}
         commands["setup"] = config["Commands"]["SETUP_CMD"]
         commands["send"] = config["Commands"]["SEND_CMD"]
-        # COMMANDS = [SETUP_CMD, SEND_CMD]
 
         # Sample and run time
         times = {}
         times["sample_time"] = config["Times"]["SAMPLE_TIME"]
         times["runtime"] = config["Times"]["TOTAL_RUNTIME"]
-        # TIMES = [SAMPLE_TIME, TOTAL_RUNTIME]
 
         return save_data, commands, times
     else:
