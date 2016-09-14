@@ -55,9 +55,20 @@ def parse_config():
 
 
 def determine_loop_count(total_runtime, sample_time):
+    """
+    Used to determine number of loops the program should run
+    by dividing total_runtime and sample_time
+
+    INPUT:
+        total_runtime: float
+        sample_time: float
+
+    OUTPUT:
+        returns -1 if total_runtime is -1, num_loops otherwise
+    """
     num_loops = round(total_runtime / sample_time)
     if num_loops > 0:
-        logging.info("Loops to run: %i" % num_loops)
+        logging.info("Loops to run: %i", num_loops)
         return num_loops
     else:
         logging.info("Infinite loops")
@@ -78,8 +89,8 @@ def read_write(my_ser, commands, times):
     send = commands["send"]
     sample = times["sample_time"]
 
-    logging.debug("Send command: %s" % send)
-    logging.debug("Sample time: %s" % sample)
+    logging.debug("Send command: %s", send)
+    logging.debug("Sample time: %s", sample)
 
     # Initialize list to contain readings
     out = []
@@ -102,14 +113,14 @@ def read_write(my_ser, commands, times):
         for run_count in itertools.count():
             if run_count == run_loops:
                 break
-            logging.debug("Run count: %s" % run_count)
+            logging.debug("Run count: %s", run_count)
             start_time = current_time()
 
-            logging.info("Sending command: %s" % send)
+            logging.info("Sending command: %s", send)
             write("%s\n" % send)
 
             return_string = rstrip(str(read(256)))
-            logging.info("Return string: %s" % return_string)
+            logging.info("Return string: %s", return_string)
 
             if len(return_string) > 0:
                 print return_string
@@ -180,8 +191,8 @@ def auto_connect_device(commands):
 
         # Send command to ensure device is responding
         # and connected to correct port
-        logging.info("Inputting device settings to: %s" % com_port.device)
-        logging.info("Setup settings: %s" % commands["setup"])
+        logging.info("Inputting device settings to: %s", com_port.device)
+        logging.info("Setup settings: %s", commands["setup"])
         connect_ser.write("%s\n" % commands["setup"])
         connect_ser.write("%s\n" % commands["send"])
         return_string = connect_ser.read(256)
@@ -197,12 +208,12 @@ if __name__ == '__main__':
 
     try:
         try:
-            SAVE_DATA, COMMANDS, TIMES = parse_config()
-            ser = auto_connect_device(COMMANDS)
+            save_data, commands, times = parse_config()
+            ser = auto_connect_device(commands)
             read_time_start = time.time()
-            output = read_write(ser, COMMANDS, TIMES)
+            output = read_write(ser, commands, times)
             read_time_total = time.time() - read_time_start
-            write_file(output, SAVE_DATA)
+            write_file(output, save_data)
             ser.close()
             print "Total time sampled: %s" % str(read_time_total)
         except error_codes.ConnectError:
