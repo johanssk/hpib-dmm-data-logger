@@ -1,13 +1,13 @@
 # import mock
-import pytest
 import os.path
 import time
 
-from hypothesis import given, assume
 import hypothesis.strategies as st
+import pytest
+from hypothesis import assume, given
+
 # from pytest_mock import mocker
-from data_logger import write_file
-from data_logger import determine_loop_count
+from data_logger import determine_loop_count, write_file
 
 
 # Re-write to follow correct rounding procedure
