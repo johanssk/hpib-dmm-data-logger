@@ -8,7 +8,6 @@ import time
 import serial
 import serial.tools.list_ports as lports
 import tqdm
-
 from configobj import ConfigObj
 from retrying import retry
 from validate import Validator
