@@ -72,7 +72,7 @@ def determine_loop_count(total_runtime, sample_time):
         return -1
 
 
-def read_write(my_ser, commands, times):
+def collect_data(my_ser, send, sample, run_loops):
     """
     Sets up device and sends commands, then reads response
 
@@ -84,8 +84,6 @@ def read_write(my_ser, commands, times):
     """
     # Assigns variables from configuration file to local variables
     # Used to speed up while loop
-    send = commands["send"]
-    sample = times["sample_time"]
 
     logging.debug("Send command: %s", send)
     logging.debug("Sample time: %s", sample)
@@ -101,8 +99,6 @@ def read_write(my_ser, commands, times):
     rstrip = str.rstrip
     sleep = time.sleep
     append = out.append
-
-    run_loops = determine_loop_count(times["runtime"], sample)
 
     logging.info("Beginning data logging")
 
@@ -213,7 +209,9 @@ if __name__ == '__main__':
             SAVE_DATA, COMMANDS, TIMES = parse_config()
             ser = auto_connect_device(COMMANDS)
             READ_TIME_START = time.time()
-            OUTPUT = read_write(ser, COMMANDS, TIMES)
+            OUTPUT = collect_data(
+                ser, COMMANDS["send"], TIMES["sample_time"],
+                determine_loop_count(TIMES["runtime"], TIMES["sample_time"]))
             READ_TIME_TOTAL = time.time() - READ_TIME_START
             write_file(OUTPUT, SAVE_DATA)
             ser.close()
