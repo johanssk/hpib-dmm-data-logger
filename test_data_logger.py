@@ -59,5 +59,4 @@ def test_auto_connect_device(mock_port, mock_serial, monkeypatch):
     port = mock_port.return_value
     monkeypatch.setattr(lports, 'comports', lambda: [port])
     device = auto_connect_device('T1', 'T3')
-    # mock_serial.return_value.write = "ok"
     assert device
