@@ -1,105 +1,152 @@
-
-__version__ = 4
+import datetime
+import itertools
+import logging
 import os.path
 import sys
 import time
-import datetime
+
 import serial
-import logging
+import serial.tools.list_ports as lports
 import tqdm
-import csv
-# from data_logger_configuration import *
-# from data_logger_configuration import COM_PORT
-from data_logger_configuration import OUTPUT_SAVE_PATH
-from data_logger_configuration import OUTPUT_SAVE_NAME
-from data_logger_configuration import SEND_CMD
-from data_logger_configuration import SAMPLE_TIME
-from data_logger_configuration import OUTPUT_SAVE_EXTENTION
-from data_logger_configuration import TIME_SLEEP_READ
-from data_logger_configuration import SETUP_CMD
 
-logging.basicConfig(level=logging.DEBUG, format=' %(asctime)s - %(levelname)s- %(message)s')
-# logging.disable(logging.DEBUG)
+from configobj import ConfigObj
+from retrying import retry
+from validate import Validator
 
-class TimeError(Exception):
-    pass
-class PathError(Exception):
-    pass
+import error_codes
 
-def read_write(my_ser):
+__version__ = 4
+
+logging.basicConfig(
+    level=logging.DEBUG, format=' %(asctime)s - %(levelname)s- %(message)s')
+logging.disable(logging.DEBUG)
+
+
+def parse_config():
+    config = ConfigObj('config.ini', configspec='configspec.ini')
+
+    validator = Validator()
+    result = config.validate(validator)
+
+    if result is True:
+        # Save Options
+        save_data = {}
+        save_data["path"] = config["Save"]["OUTPUT_SAVE_PATH"]
+        save_data["name"] = config["Save"]["OUTPUT_SAVE_NAME"]
+        save_data["ext"] = config["Save"]["OUTPUT_SAVE_EXTENTION"]
+
+        # System Commands
+        commands = {}
+        commands["setup"] = config["Commands"]["SETUP_CMD"]
+        commands["send"] = config["Commands"]["SEND_CMD"]
+
+        # Sample and run time
+        times = {}
+        times["sample_time"] = config["Times"]["SAMPLE_TIME"]
+        times["runtime"] = config["Times"]["TOTAL_RUNTIME"]
+
+        return save_data, commands, times
+    else:
+        print "Could not validate config file"
+        logging.critical("Could not validate config file")
+        sys.exit()
+
+
+def determine_loop_count(total_runtime, sample_time):
+    """
+    Used to determine number of loops the program should run
+    by dividing total_runtime and sample_time
+
+    INPUT:
+        total_runtime: float
+        sample_time: float
+
+    OUTPUT:
+        returns -1 if total_runtime is -1, num_loops otherwise
+    """
+    num_loops = round(total_runtime / sample_time)
+    if num_loops > 0:
+        logging.info("Loops to run: %i", num_loops)
+        return num_loops
+    else:
+        logging.info("Infinite loops")
+        return -1
+
+
+def read_write(my_ser, commands, times):
     """
     Sets up device and sends commands, then reads response
 
-    INPUT 
+    INPUT
     my_ser = serial connection
 
-    OUTPUT 
+    OUTPUT
     out: List of tuples of format (time_of_reading, reading)
     """
+    # Assigns variables from configuration file to local variables
+    # Used to speed up while loop
+    send = commands["send"]
+    sample = times["sample_time"]
+
+    logging.debug("Send command: %s", send)
+    logging.debug("Sample time: %s", sample)
+
+    # Initialize list to contain readings
+    out = []
+
+    # Assign function lookups to variables
+    # Used to speed up while loop
+    current_time = time.time
+    write = my_ser.write
+    read = my_ser.read
+    rstrip = str.rstrip
+    sleep = time.sleep
+    append = out.append
+
+    run_loops = determine_loop_count(times["runtime"], sample)
+
+    logging.info("Beginning data logging")
+
     try:
-        # Assigns variables from configuration file to local variables
-        # Used to speed up while loop
-        setup = SETUP_CMD
-        send = SEND_CMD
-        sleep_read = TIME_SLEEP_READ
-        sample = SAMPLE_TIME
-
-        logging.debug("Setup command: %s" % setup)
-        logging.debug("Send command: %s" % send)
-        logging.debug("Time sleep read: %s" % sleep_read)
-        logging.debug("Sample time: %s" % sample)
-
-        logging.info("Inputting device settings")
-        my_ser.write("%s\n" % setup)
-
-        # Initialize list to contain readings
-        out = []
-
-        # Assign function lookups to variables
-        # Used to speed up while loop
-        current_time = time.time
-        write = my_ser.write
-        read = my_ser.read
-        rstrip = str.rstrip
-        sleep = time.sleep
-        append = out.append
-
-        logging.info("Beginning data logging")
-
-        while True:
+        relative_time_offset = current_time()
+        for run_count in itertools.count():
+            if run_count == run_loops:
+                break
+            logging.debug("Run count: %s", run_count)
             start_time = current_time()
 
-            logging.debug("Sending command: %s" % send)
+            logging.info("Sending command: %s", send)
             write("%s\n" % send)
 
-            sleep(sleep_read)
-
             return_string = rstrip(str(read(256)))
-            append((current_time(), return_string))
+            logging.info("Return string: %s", return_string)
 
             if len(return_string) > 0:
                 print return_string
+                append((current_time() - relative_time_offset, return_string))
             else:
                 logging.critical("No response from system")
-                return False
-            
+                raise error_codes.ReturnError
+
             offset = current_time() - start_time
             logging.debug("Offset: %f", offset)
             if sample - offset > 0:
                 sleep(sample - offset)
             print current_time() - start_time
     except KeyboardInterrupt:
-        logging.info("Done logging")
-        return out
+        pass
+    logging.info("Done collecting data")
+    return out
 
-def write_file(out, output_save_path, output_save_name, output_save_extention):
+
+def write_file(out, save_data):
     """
     Writes data to specified file
 
-    INPUT 
+    INPUT
     out: List of tuples of format (time_of_reading, reading)
 
-    OUTPUT 
+    OUTPUT
     File at location LOG_SAVE_PATH, with filename of format
     "LOG_SAVE_NAME %Y-%m-%d %H_%M_%S" and extension LOG_SAVE_EXTENTION
     """
@@ -107,10 +154,15 @@ def write_file(out, output_save_path, output_save_name, output_save_extention):
     now = datetime.datetime.now()
     file_time = now.strftime("%Y-%m-%d %H_%M_%S")
 
-    filename = "%s %s%s" % (output_save_name, file_time, output_save_extention)
+    filename = "%s %s%s" % (save_data["name"], file_time, save_data["ext"])
     logging.debug(filename)
 
-    full_filename = os.path.join(output_save_path, filename)
+    if os.environ.has_key("USERPROFILE"):
+        user_path = os.environ["USERPROFILE"]
+    else:
+        user_path = os.path.expanduser("~")
+    save_path = os.path.join(user_path, save_data["path"])
+    full_filename = os.path.join(save_path, filename)
     logging.info("Saving as: %s", full_filename)
 
     with open(full_filename, 'a+') as data:
@@ -119,80 +171,71 @@ def write_file(out, output_save_path, output_save_name, output_save_extention):
             data.write(write_line)
     return full_filename
 
-def auto_connect_device():
-    """
-    Runs through COM 0-4 and connects to correct device
 
-    INPUT 
+@retry(stop_max_attempt_number=7, wait_fixed=2000)
+def auto_connect_device(commands):
+    """
+    Finds ports that are currently availiable and attempts to connect
+
+    INPUT
     None
 
-    OUTPUT 
-    try_ser if connected and device responding
-    boolean False if no connection
+    OUTPUT
+    connect_ser if connected and device responding
+    Raise exception if no connection
     """
     logging.info("Connecting to device")
-    for com_port in xrange(5):
-        logging.debug("Trying COM%i" % com_port)
-        try:
-            # try_ser = serial.Serial('\\\\.\\COM' + str(com_port), 9600, timeout=0.5)
-            try_ser = serial.Serial('COM' + str(com_port), 9600, timeout=0.5)
-            try_ser.write("%s\n" % SEND_CMD)
-            time.sleep(TIME_SLEEP_READ)
-            test_read = try_ser.read(256).strip()
-            logging.debug(test_read)
-            logging.debug("Length test_read: %i" % len(test_read))
-            if not len(test_read) > 0:
-                continue
-            logging.info("Connected to COM%i" % com_port)
-            return try_ser
-        except WindowsError:
-            continue
-        except serial.SerialException:
-            continue
-    logging.critical("Error connecting to device")
-    return False
+    ports = list(
+        lports.comports())  # Change to .grep once determine what port returns
+    logging.debug(ports)
+    for com_port in ports:
+        connect_ser = serial.Serial(com_port.device, 9600, timeout=0.5)
+
+        # Send command to ensure device is responding
+        # and connected to correct port
+        logging.info("Inputting device settings to: %s", com_port.device)
+        logging.info("Setup settings: %s", commands["setup"])
+        connect_ser.write("%s\n" % commands["setup"])
+        connect_ser.write("%s\n" % commands["send"])
+        return_string = connect_ser.read(256)
+        return_string = str(return_string).rstrip()
+        if len(return_string) > 0:
+            return connect_ser
+    logging.warning("No connection to device")
+    raise error_codes.ConnectError
+
 
 if __name__ == '__main__':
-    start_total_time = time.time()
+    START_TOTAL_TIME = time.time()
     ser = serial.Serial()
-    
+
     try:
-        # assert SAMPLE_TIME > 0
-        if not SAMPLE_TIME > 0:
-            raise TimeError
-        if not TIME_SLEEP_READ > 0:
-            raise TimeError
-        # assert TIME_SLEEP_READ > 0
-        if not os.path.isdir(OUTPUT_SAVE_PATH):
-            raise PathError
-        # assert os.path.isdir(LOG_SAVE_PATH)
-        
-        ser = auto_connect_device()
-        if not ser:
-            sys.exit()
-        output = read_write(ser)
-        if output != False:
-            write_file(output, OUTPUT_SAVE_PATH, OUTPUT_SAVE_NAME, OUTPUT_SAVE_EXTENTION)
+        try:
+            SAVE_DATA, COMMANDS, TIMES = parse_config()
+            ser = auto_connect_device(COMMANDS)
+            READ_TIME_START = time.time()
+            OUTPUT = read_write(ser, COMMANDS, TIMES)
+            READ_TIME_TOTAL = time.time() - READ_TIME_START
+            write_file(OUTPUT, SAVE_DATA)
             ser.close()
-        print "Total Time: %s" % (time.time()-start_total_time)
+            print "Total time sampled: %s" % str(READ_TIME_TOTAL)
+        except error_codes.ConnectError:
+            logging.critical("Unable to connect to device")
+            sys.exit()
+        except error_codes.ReturnError:
+            logging.critical("Exiting program")
+            sys.exit()
+        print "Total Time: %s" % (time.time() - START_TOTAL_TIME)
 
     except serial.SerialException, e:
         logging.critical(e)
-
     except KeyboardInterrupt, e:
         ser.close()
         logging.critical(e)
-    except WindowsError, e:
-        logging.critical("Cannot open port specified")
+    except error_codes.TimeError:
+        logging.critical(
+            "SAMPLE_TIME and TIME_SLEEP_READ must be greater than zero. Fix in configuration file.")
         print "Error in configuration file"
-    except TimeError:
-        logging.critical("SAMPLE_TIME and TIME_SLEEP_READ must be greater than zero. Fix in configuration file.")
-        print "Error in configuration file"
-        # print("SAMPLE_TIME and TIME_SLEEP_READ must be greater than zero")
-    except PathError:
+    except error_codes.PathError:
         logging.critical("Invalid save path. Fix in configuration file.")
         print "Error in configuration file"
-    # except AssertionError, e:
-    #     print e
-    #     print "Fix errors in configuration file"
-    #     logging.error("Fix errors in configuration file")
