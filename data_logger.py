@@ -27,7 +27,7 @@ def parse_config():
     validator = Validator()
     result = config.validate(validator)
 
-    if result:
+    if result is True:
         # Save Options
         save_data = {}
         save_data["path"] = config["Save"]["OUTPUT_SAVE_PATH"]
