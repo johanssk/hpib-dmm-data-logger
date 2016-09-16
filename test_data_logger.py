@@ -53,10 +53,11 @@ def test_write_file(tmpdir, out):
 
 @patch('data_logger.serial.Serial')
 @patch('data_logger.serial.tools.list_ports_common.ListPortInfo')
-def test_auto_connect_device(mock_port, mock_serial, monkeypatch):
-    mock_serial.return_value.read.return_value = "hello"
+@patch('data_logger.serial.tools.list_ports.comports')
+def test_auto_connect_device(mock_list, mock_port, mock_serial):
+    mock_serial.return_value.read.return_value = "2.8549e-6"
     mock_port.return_value.device.return_value = "test"
     port = mock_port.return_value
-    monkeypatch.setattr(lports, 'comports', lambda: [port])
+    mock_list.return_value = [port]
     device = auto_connect_device('T1', 'T3')
     assert device
