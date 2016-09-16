@@ -14,11 +14,10 @@ from validate import Validator
 
 import error_codes
 
-__version__ = 4
-
 logging.basicConfig(
     level=logging.DEBUG, format=' %(asctime)s - %(levelname)s- %(message)s')
-logging.disable(logging.DEBUG)
+
+# logging.disable(logging.DEBUG)
 
 
 def parse_config():
