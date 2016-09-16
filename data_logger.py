@@ -1,3 +1,4 @@
+import csv
 import datetime
 import itertools
 import logging
@@ -7,7 +8,6 @@ import time
 
 import serial
 import serial.tools.list_ports as lports
-import tqdm
 from configobj import ConfigObj
 from retrying import retry
 from validate import Validator
@@ -163,11 +163,10 @@ def write_file(out, save_data):
     save_path = os.path.join(user_path, save_data["path"])
     full_filename = os.path.join(save_path, filename)
     logging.info("Saving as: %s", full_filename)
-
-    with open(full_filename, 'a+') as data:
-        for pair in tqdm.tqdm(out):
-            write_line = "%s,%s\n" % (str(pair[0]), str(pair[1]))
-            data.write(write_line)
+    with open(full_filename, 'w') as output_file:
+        output_writer = csv.writer(output_file)
+        for pair in out:
+            output_writer.writerow(pair)
     return full_filename
 
 
