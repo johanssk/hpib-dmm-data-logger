@@ -2,10 +2,13 @@
 import os.path
 
 import hypothesis.strategies as st
+import serial.tools.list_ports as lports
 from hypothesis import assume, given
+from mock import patch
 
+import data_logger
 # from pytest_mock import mocker
-from data_logger import determine_loop_count, write_file
+from data_logger import auto_connect_device, determine_loop_count, write_file
 
 
 # Re-write to follow correct rounding procedure
@@ -46,3 +49,15 @@ def test_write_file(tmpdir, out):
         for i, line in enumerate(check[:-1]):
             output = out[i]
             assert line == "%s,%s\n" % (str(output[0]), str(output[1]))
+
+
+@patch('data_logger.serial.Serial')
+@patch('data_logger.serial.tools.list_ports_common.ListPortInfo')
+def test_auto_connect_device(mock_port, mock_serial, monkeypatch):
+    mock_serial.return_value.read.return_value = "hello"
+    mock_port.return_value.device.return_value = "test"
+    port = mock_port.return_value
+    monkeypatch.setattr(lports, 'comports', lambda: [port])
+    device = auto_connect_device('T1', 'T3')
+    # mock_serial.return_value.write = "ok"
+    assert device

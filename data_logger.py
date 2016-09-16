@@ -167,7 +167,7 @@ def write_file(out, save_data):
 
 
 @retry(stop_max_attempt_number=7, wait_fixed=2000)
-def auto_connect_device(commands):
+def auto_connect_device(setup, send):
     """
     Finds ports that are currently availiable and attempts to connect
 
@@ -188,11 +188,12 @@ def auto_connect_device(commands):
         # Send command to ensure device is responding
         # and connected to correct port
         logging.info("Inputting device settings to: %s", com_port.device)
-        logging.info("Setup settings: %s", commands["setup"])
-        connect_ser.write("%s\n" % commands["setup"])
-        connect_ser.write("%s\n" % commands["send"])
+        logging.info("Setup settings: %s", setup)
+        connect_ser.write("%s\n" % setup)
+        connect_ser.write("%s\n" % send)
         return_string = connect_ser.read(256)
         return_string = str(return_string).rstrip()
+        logging.debug(return_string)
         if len(return_string) > 0:
             return connect_ser
     logging.warning("No connection to device")
@@ -206,7 +207,7 @@ if __name__ == '__main__':
     try:
         try:
             SAVE_DATA, COMMANDS, TIMES = parse_config()
-            ser = auto_connect_device(COMMANDS)
+            ser = auto_connect_device(COMMANDS["setup"], COMMANDS["send"])
             READ_TIME_START = time.time()
             OUTPUT = collect_data(
                 ser, COMMANDS["send"], TIMES["sample_time"],
