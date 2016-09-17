@@ -8,7 +8,8 @@ from mock import patch
 
 import data_logger
 # from pytest_mock import mocker
-from data_logger import auto_connect_device, determine_loop_count, write_file
+from data_logger import (auto_connect_device, collect_data,
+                         determine_loop_count, write_file)
 
 
 # Re-write to follow correct rounding procedure
@@ -61,3 +62,17 @@ def test_auto_connect_device(mock_list, mock_port, mock_serial):
     mock_list.return_value = [port]
     device = auto_connect_device('T1', 'T3')
     assert device
+
+
+@given(
+    sample=st.floats(
+        allow_nan=False, allow_infinity=False, min_value=0, max_value=1),
+    run_loops=st.integers(
+        max_value=1, min_value=0))
+@patch('data_logger.serial.Serial')
+def test_collect_data(mock_serial, run_loops, sample):
+    mock_serial.return_value.read.return_value = "2.8549e-6"
+    ser = mock_serial
+    out = collect_data(ser, 'T2', sample, run_loops)
+    print out
+    assert len(out) == run_loops
