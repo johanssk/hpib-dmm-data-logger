@@ -62,16 +62,13 @@ def determine_loop_count(total_runtime, sample_time):
     OUTPUT:
         returns -1 if total_runtime is -1, num_loops otherwise
     """
-    num_loops = round(total_runtime / sample_time)
-    if num_loops > 0:
-        logging.info("Loops to run: %i", num_loops)
-        return num_loops
-    else:
-        logging.info("Infinite loops")
-        return -1
+
+    num_loops = round(total_runtime / sample_time) if (
+        total_runtime > 0) else -1
+    return num_loops
 
 
-def read_write(my_ser, commands, times):
+def collect_data(my_ser, send, sample, run_loops):
     """
     Sets up device and sends commands, then reads response
 
@@ -83,8 +80,6 @@ def read_write(my_ser, commands, times):
     """
     # Assigns variables from configuration file to local variables
     # Used to speed up while loop
-    send = commands["send"]
-    sample = times["sample_time"]
 
     logging.debug("Send command: %s", send)
     logging.debug("Sample time: %s", sample)
@@ -100,8 +95,6 @@ def read_write(my_ser, commands, times):
     rstrip = str.rstrip
     sleep = time.sleep
     append = out.append
-
-    run_loops = determine_loop_count(times["runtime"], sample)
 
     logging.info("Beginning data logging")
 
@@ -170,7 +163,7 @@ def write_file(out, save_data):
 
 
 @retry(stop_max_attempt_number=7, wait_fixed=2000)
-def auto_connect_device(commands):
+def auto_connect_device(setup, send):
     """
     Finds ports that are currently availiable and attempts to connect
 
@@ -191,11 +184,12 @@ def auto_connect_device(commands):
         # Send command to ensure device is responding
         # and connected to correct port
         logging.info("Inputting device settings to: %s", com_port.device)
-        logging.info("Setup settings: %s", commands["setup"])
-        connect_ser.write("%s\n" % commands["setup"])
-        connect_ser.write("%s\n" % commands["send"])
+        logging.info("Setup settings: %s", setup)
+        connect_ser.write("%s\n" % setup)
+        connect_ser.write("%s\n" % send)
         return_string = connect_ser.read(256)
         return_string = str(return_string).rstrip()
+        logging.debug(return_string)
         if len(return_string) > 0:
             return connect_ser
     logging.warning("No connection to device")
@@ -209,9 +203,11 @@ if __name__ == '__main__':
     try:
         try:
             SAVE_DATA, COMMANDS, TIMES = parse_config()
-            ser = auto_connect_device(COMMANDS)
+            ser = auto_connect_device(COMMANDS["setup"], COMMANDS["send"])
             READ_TIME_START = time.time()
-            OUTPUT = read_write(ser, COMMANDS, TIMES)
+            OUTPUT = collect_data(
+                ser, COMMANDS["send"], TIMES["sample_time"],
+                determine_loop_count(TIMES["runtime"], TIMES["sample_time"]))
             READ_TIME_TOTAL = time.time() - READ_TIME_START
             write_file(OUTPUT, SAVE_DATA)
             ser.close()
