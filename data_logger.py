@@ -62,13 +62,10 @@ def determine_loop_count(total_runtime, sample_time):
     OUTPUT:
         returns -1 if total_runtime is -1, num_loops otherwise
     """
-    num_loops = round(total_runtime / sample_time)
-    if num_loops > 0:
-        logging.info("Loops to run: %i", num_loops)
-        return num_loops
-    else:
-        logging.info("Infinite loops")
-        return -1
+
+    num_loops = round(total_runtime / sample_time) if (
+        total_runtime > 0) else -1
+    return num_loops
 
 
 def collect_data(my_ser, send, sample, run_loops):
