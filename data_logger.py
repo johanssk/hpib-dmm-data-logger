@@ -163,7 +163,7 @@ def write_file(out, save_data):
     return full_filename
 
 
-# @retry(stop_max_attempt_number=7, wait_fixed=2000)
+@retry(stop_max_attempt_number=7, wait_fixed=2000)
 def auto_connect_device(setup, send):
     """
     Finds ports that are currently availiable and attempts to connect
