@@ -59,7 +59,8 @@ def test_write_file(tmpdir, out):
 @patch('data_logger.serial.Serial')
 @patch('data_logger.serial.tools.list_ports_common.ListPortInfo')
 @patch('data_logger.serial.tools.list_ports.comports')
-def test_auto_connect_device(mock_list, mock_port, mock_serial):
+def test_auto_connect_device_positive_connect(mock_list, mock_port,
+                                              mock_serial):
     mock_serial.return_value.read.return_value = "2.8549e-6"
     mock_port.return_value.device.return_value = "test"
     mock_list.return_value = [mock_port.return_value]
