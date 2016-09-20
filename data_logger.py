@@ -193,11 +193,12 @@ class Test(object):
 
     def run_full(self):
         START_TOTAL_TIME = time.time()
-        ser = self.auto_connect_device()
+        ser = serial.Serial()
 
         try:
             try:
                 READ_TIME_START = time.time()
+                ser = self.auto_connect_device()
                 output = self.collect_data(ser, self.determine_loop_count())
                 READ_TIME_TOTAL = time.time() - READ_TIME_START
                 print("Total time sampled: %s" % str(READ_TIME_TOTAL))
