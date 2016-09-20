@@ -1,4 +1,3 @@
-from __future__ import print_function
 # import mock
 import csv
 import os.path
@@ -83,5 +82,5 @@ def test_collect_data(mock_serial, run_loops, sample):
     new_test.send_cmd = 'T2'
     new_test.sample_time = sample
     out = new_test.collect_data(ser, run_loops)
-    print(out)
+    print out
     assert len(out) == run_loops
