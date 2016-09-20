@@ -1,6 +1,7 @@
 import datetime
 import itertools
 import logging
+import numbers
 import os.path
 import sys
 import time
@@ -54,6 +55,8 @@ class Test(object):
         OUTPUT:
             returns -1 if total_runtime is -1, num_loops otherwise
         """
+        assert isinstance(self.runtime, numbers.Number)
+        assert isinstance(self.sample_time, numbers.Number)
 
         num_loops = round(self.runtime / self.sample_time) if (
             self.runtime > 0) else -1
@@ -103,6 +106,8 @@ class Test(object):
         """
         # Assigns variables from configuration file to local variables
         # Used to speed up while loop
+
+        assert isinstance(run_loops, numbers.Number)
 
         logging.debug("Send command: %s", self.send_cmd)
         logging.debug("Sample time: %s", self.sample_time)
