@@ -31,7 +31,7 @@ class Test(object):
             self.save_ext = config["Save"]["OUTPUT_SAVE_EXTENTION"]
 
             # System Commands
-            self.setup_command = config["Commands"]["SETUP_COMMAND"]
+            self.setup_command = config["Commands"]["SETUP_CMD"]
             self.send_cmd = config["Commands"]["SEND_CMD"]
 
             # Sample and run time
